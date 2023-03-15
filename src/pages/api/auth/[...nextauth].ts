@@ -22,9 +22,28 @@ export default NextAuth({
 
             try {
                 await fauna.query(
-                    q.Create(
-                        q.Collection('users'),
-                        { data: { email } }
+                    q.If(
+                        q.Not(
+                            q.Exists(
+                                q.Match( // = WHERE
+                                    q.Index('user_by_email'),
+                                    // @ts-ignore
+                                    q.Casefold(email) // lowercase 
+                                )
+                            )
+                        ),
+                        q.Create(
+                            q.Collection('users'),
+                            { data: { email } }
+                        ),
+
+                        q.Get( // = SELECT
+                            q.Match( // = WHERE
+                                q.Index('user_by_email'),
+                                // @ts-ignore
+                                q.Casefold(email) // lowercase
+                            )
+                        )
                     )
                 );
                 return true
