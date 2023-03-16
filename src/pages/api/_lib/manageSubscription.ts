@@ -5,6 +5,7 @@ import { query as q } from 'faunadb';
 export async function saveSubscription(
     subscriptionId: string,
     customerId: string,
+    createAction = false,
 ) {
     // 1. Buscar o usuário no FaunaDB com o ID {customerId}
     // 1. Search for the user in FaunaDB with the ID {customerId}
@@ -30,13 +31,31 @@ export async function saveSubscription(
 
     // 2. Salvar os dados da subscription no FaunaDB
     // 2. Save subscription data in FaunaDB
-    await fauna.query(
-        q.Create(
-            q.Collection('subscriptions'),
-            {
-                data: subscriptionData
-            }
+    if (createAction) {
+        await fauna.query(
+            q.Create(
+                q.Collection('subscriptions'),
+                {
+                    data: subscriptionData
+                }
+            )
         )
-    )
-
+    } else {
+        await fauna.query(
+            q.Replace(
+                q.Select(
+                    'ref',
+                    q.Get(
+                        q.Match(
+                            q.Index('subscription_by_id'),
+                            subscriptionId,
+                        )
+                    )
+                ),
+                {
+                    data: subscriptionData
+                }
+            )
+        )
+    }
 }
